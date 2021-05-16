@@ -124,19 +124,30 @@ PRESET = choose_preset(PRESETNAME) # choose_preset returnes a preset function th
 RES_COLORS = unpack_colors(choose_colors(COLORS, COLORSCHEME)) # choose_colors returns a tuple of two 'RRGGBB' strings that define the colors of the username
 # we also unpack them from ('RRGGBB', 'RRGGBB') format into [[R, G, B], [R, G, B]] format, where R,G,B are integers
 
+OUTLINE_BRIGHTNESS = 1.4
+OUTLINE_THICKNESS = 0.7
 
-bundle = generate_image(FONT, USERNAME, IMG_WIDTH, PRESET, RES_COLORS, 1.8, 0.7)
-bundle = airbrush(bundle, 0.5, 80, 10, 10)
-bundle = airbrush(bundle, 1.8, 35, 10, 10)
+bundle = generate_image(FONT, USERNAME, IMG_WIDTH, PRESET, RES_COLORS, 
+                  OUTLINE_BRIGHTNESS, OUTLINE_THICKNESS
+                  )
+bundle = airbrush(bundle, 0.7, 80, 10, 10)
+bundle = airbrush(bundle, 1.3, 35, 10, 10)
 
-Image.alpha_composite(bundle[0][0], bundle[1][0]).show()
-'''
-image.show()
-image = Image.alpha_composite(outline, image)
-parallel = add_parallel(image, 0.4, 7)
-parallel = Image.alpha_composite(parallel, image)
+image_c = Image.alpha_composite(bundle[0][1], bundle[0][0])
+image_uc = Image.alpha_composite(bundle[1][1], bundle[1][0])
+parallels = add_parallel((image_c, image_uc), RES_COLORS, 0.4, 7)
+
+fin_one_c = Image.alpha_composite(parallels[0], bundle[0][0])
+fin_one_uc = Image.alpha_composite(parallels[1], bundle[1][0])
+
+fin_two_c = Image.alpha_composite(fin_one_c, bundle[0][1])
+fin_two_uc = Image.alpha_composite(fin_one_uc, bundle[1][1])
+
+fin_three = Image.alpha_composite(fin_two_c, fin_two_uc)
+#parallel = Image.alpha_composite(parallel, image)
 #parallel = Image.alpha_composite(parallel, outline)
-parallel.show()
+fin_three.show()
+'''
 '''
     
 

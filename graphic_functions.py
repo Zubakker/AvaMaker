@@ -83,61 +83,71 @@ def generate_image(FONT, USERNAME, IMG_WIDTH, PRESET, RES_COLORS, outline_color,
 
 def airbrush(bundle, brightness, line_height, blur, thickness): 
     img_width, img_height = bundle[0][0].size
-    brightness = int(255 * (brightness - 1))
+    k = int(abs(255 * (brightness - 1)))
     line_height = int(line_height * img_height * 0.01)
     blur = int(img_height * blur * 0.01)
     thickness = int(img_height * thickness * 0.01)
 
+    #b_color = (brightness, brightness, brightness, 255)
     b_color = (255, 255, 255, 255)
 
     blur_layer = Image.new("RGBA", (img_width, img_height), (0,0,0,0))
     white = Image.new("RGBA", (img_width, img_height), (0,0,0,255))
+    #gray = Image.new("RGBA", (img_width, img_height), (brightness,brightness,brightness,255))
+    # im.show() # <<<<<
+
     draw = ImageDraw.Draw(blur_layer)
     draw.line(((0, line_height), (img_width, line_height)), width=thickness, fill=b_color)
     blur_layer = blur_layer.filter(ImageFilter.BoxBlur(blur))
+    blur_load = blur_layer.load()
+    
+    for i in range(img_width):
+        for j in range(img_height):
+             r, g, b, a = blur_load[i, j]
+             r = int(k * (a/128))
+             g = int(k * (a/128))
+             b = int(k * (a/128))
+             a = 0
+             blur_load[i, j] = (r, g, b, a)
 
-    shade_change_c = ImageChops.multiply(bundle[0][0], blur_layer)
-    # shade_change_c.show()
-    invis_shade_change_c = ImageChops.subtract(shade_change_c, white)
-    result_c = ImageChops.subtract(bundle[0][0], invis_shade_change_c)
-
-    shade_change_uc = ImageChops.multiply(bundle[1][0], blur_layer)
-    invis_shade_change_uc = ImageChops.subtract(shade_change_uc, white)
-    result_uc = ImageChops.subtract(bundle[1][0], invis_shade_change_uc)
+    if brightness > 1:
+        result_c = ImageChops.add(bundle[0][0], blur_layer)
+        result_uc = ImageChops.add(bundle[1][0], blur_layer)
+    else:
+        result_c = ImageChops.subtract(bundle[0][0], blur_layer)
+        result_uc = ImageChops.subtract(bundle[1][0], blur_layer)
 
     return [[result_c, bundle[0][1]], [result_uc, bundle[1][1]]]
 
 
 
 # add_parallel(image, brightness, offset)
-#     image is the PIL.Image object
+#     ....
 #     brightness is a floating number >= 0 that will change the brightness of the image, if the numberis greater than 1 the result will be brighter, otherwise the result will be darker 
 #     offset defines the thickness of the parallel layer meassured in percents of the image height
-def add_parallel(image, brightness, offset):
-    img_width, img_height = image.size
+def add_parallel(pair, colors, brightness, offset):
+    img_width, img_height = pair[0].size
     offset = int(offset * img_height * 0.01)
     k = int((brightness -1) * 255)
+    colors[0] = [int(brightness * x) for x in colors[0]]
+    colors[1] = [int(brightness * x) for x in colors[1]]
 
-    parallel_layer = Image.new("RGBA", (img_width, img_height), (0,0,0,0))
-    parallel_layer.paste(image, (0, 0))
+    parallel_layer_c = Image.new("RGBA", (img_width, img_height), (0,0,0,0))
+    parallel_layer_uc = Image.new("RGBA", (img_width, img_height), (0,0,0,0))
 
-    img_load = image.load()
-    par_load = parallel_layer.load()
-    for x in range(img_width):
-        for y in range(img_height):
-            r, g, b, a = img_load[x, y]
-            if par_load[x, y][3] != 0:
-                par_load[x, y] = (r+k, g+k, b+k, 255)
+    par_c_load = parallel_layer_c.load()
+    par_uc_load = parallel_layer_uc.load()
+    img_c_load = pair[0].load()
+    img_uc_load = pair[1].load()
     for x in range(img_width):
         for y in range(img_height-offset):
             for f in range(offset): 
-                r, g, b, a = img_load[x, y]
-                if par_load[x, y+f][3] == 0 and a != 0:
-                    par_load[x, y+f] = (r+k, g+k, b+k, 255)  
-                    # par_load[x, y+f] = (0, 0, 0, 255) 
-#             if par_load[x, y][3] != 0:
- #                par_load[x, y] = (0, 200, 0, 255)
+                if img_c_load[x, y][3] != 0:
+                    par_c_load[x, y+f] = tuple(colors[0] + [255])  
+                if img_uc_load[x, y][3] != 0:
+                    par_uc_load[x, y+f] = tuple(colors[1] + [255])  
 
-    parallel_layer = Image.alpha_composite(parallel_layer, image)
+    parallel_layer_c = Image.alpha_composite(parallel_layer_c, pair[0])
+    parallel_layer_uc = Image.alpha_composite(parallel_layer_uc, pair[1])
     # parallel_layer.show()
-    return parallel_layer
+    return parallel_layer_c, parallel_layer_uc 
