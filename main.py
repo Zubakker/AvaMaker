@@ -3,7 +3,7 @@ import argparse
 from sys import argv, exit
 from os import listdir
 from random import choice
-from PIL import Image
+from PIL import Image, ImageFilter
 
 
 import presets
@@ -13,7 +13,7 @@ except AttributeError as Err:
     print("AttributeError, it seems you have created some new preset files, please make sure to run: \n $ python presets/__modloader.py \n", Err)
     exit()
 from colorschemes import colorschemes
-from graphic_functions import generate_image, airbrush, add_parallel
+from graphic_functions import generate_image, airbrush, add_parallel, make_outline
 
 
 def choose_font(FONTNAME):
@@ -147,11 +147,24 @@ fin_three = Image.alpha_composite(fin_two_c, fin_two_uc)
 #parallel = Image.alpha_composite(parallel, image)
 #parallel = Image.alpha_composite(parallel, outline)
 fin_three.show()
+
+nothing = Image.new("RGBA", fin_three.size, (0,0,0,0))
+
+tone_dark = 0.8 
+tone_light = 2.3 
+width_dark = 8
+width_light = 4
+bg_color_dark = tuple([int(x*tone_dark) for x in RES_COLORS[0]] + [255])
+bg_color_light = tuple([int(x*tone_light) for x in RES_COLORS[0]] + [255])
+img = make_outline(fin_three, width_dark, bg_color_dark)
+img = make_outline(img, width_light, bg_color_light)
+fin_res = add_parallel((img, nothing), RES_COLORS, 0.7, 7)
+fin_res = fin_res[0].filter(ImageFilter.BoxBlur(0.1))
+fin_res.show()
 '''
 '''
     
 
-# 2) раскрашивание верх светлее, низ темнее,        4) обводка букв             5) параллельный слой -- типа 3D эффект
 # 6) общая внешняя обводка(толстая, тёмная)         7) новая общая обводка (толстая, светлая)    
 # 8) ещё один параллельный слой
 # 3) раскрашивание 4) искривление 

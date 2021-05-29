@@ -26,16 +26,16 @@ def generate_image(FONT, USERNAME, IMG_WIDTH, PRESET, RES_COLORS, outline_color,
     
     text_draw = ImageDraw.Draw(text_layer)
     width, height = text_draw.textsize(USERNAME, font=fnt)
-    indent = 10
+    indent = 50 
     
-    font_size = int(40 * ((IMG_WIDTH -3*indent)/width))
-    height = int(height * ((IMG_WIDTH -3*indent)/width))
+    font_size = int(40 * ((IMG_WIDTH -2*indent)/width))
+    height = int(height * ((IMG_WIDTH -2*indent)/width))
     # ---------- when the height is calculated we start drawing ---------------
 
-    colored_text = Image.new("RGBA", (IMG_WIDTH, height + 3*indent), (0,0,0,0))
-    uncolored_text = Image.new("RGBA", (IMG_WIDTH, height + 3*indent), (0,0,0,0))
-    colored_outline = Image.new("RGBA", (IMG_WIDTH, height + 3*indent), (0,0,0,0))
-    uncolored_outline = Image.new("RGBA", (IMG_WIDTH, height + 3*indent), (0,0,0,0))
+    colored_text = Image.new("RGBA", (IMG_WIDTH, height + 1*indent), (0,0,0,0))
+    uncolored_text = Image.new("RGBA", (IMG_WIDTH, height + 1*indent), (0,0,0,0))
+    colored_outline = Image.new("RGBA", (IMG_WIDTH, height + 1*indent), (0,0,0,0))
+    uncolored_outline = Image.new("RGBA", (IMG_WIDTH, height + 1*indent), (0,0,0,0))
 
     ctd = ImageDraw.Draw(colored_text)
     uctd = ImageDraw.Draw(uncolored_text)
@@ -52,6 +52,7 @@ def generate_image(FONT, USERNAME, IMG_WIDTH, PRESET, RES_COLORS, outline_color,
 
     for i in range(len(USERNAME)): # coloring usernames according to the pattern
         letter_width, letter_height = text_draw.textsize(USERNAME[i], font=fnt)
+        """
         # --- colored letters ---
         if i in pattern:
             ctd.text((indent, 0), USERNAME[i], font=fnt, fill=bg_color)
@@ -65,6 +66,17 @@ def generate_image(FONT, USERNAME, IMG_WIDTH, PRESET, RES_COLORS, outline_color,
             ucod.text((indent-outline_thickness, -outline_thickness), 
                     USERNAME[i], font=fnt, fill=(0,0,0,0), 
                     stroke_width=outline_thickness, stroke_fill=outline_fg
+                    )
+        """
+        # --- colored letters ---
+        if i in pattern:
+            ctd.text((indent, 0), USERNAME[i], font=fnt, fill=bg_color, 
+                    stroke_width=outline_thickness, stroke_fill=outline_bg
+                    )
+        # --- uncolored letters ---
+        else:
+            uctd.text((indent, 0), USERNAME[i], font=fnt, fill=fg_color,
+                    stroke_width=outline_thickness, stroke_fill=outline_bg
                     )
         indent+= letter_width
 
@@ -151,3 +163,26 @@ def add_parallel(pair, colors, brightness, offset):
     parallel_layer_uc = Image.alpha_composite(parallel_layer_uc, pair[1])
     # parallel_layer.show()
     return parallel_layer_c, parallel_layer_uc 
+
+
+def make_outline(image, width, color):
+    h_width = int(width/2)
+    img_width, img_height = image.size
+    
+    skeleton = image.filter(ImageFilter.FIND_EDGES)
+    outlined = Image.new("RGBA", (img_width, img_height), (0,0,0,0))
+
+    skeleton_load = skeleton.load()
+    outlined_load = outlined.load()
+    
+    for x in range(width, img_width - width):
+        for y in range(width, img_height - width):
+            if skeleton_load[x, y][3]:
+                for i in range(-width, width):
+                    for j in range(-width, width):
+                        outlined_load [x + i, y+j] = color
+
+
+    result_img = Image.alpha_composite(outlined, image)
+    return result_img
+    # result_img.show()
